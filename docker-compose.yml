@@ -1,0 +1,147 @@
+version: '3.8'
+
+services:
+  # Oracle XE Database (Source)
+  oracle-xe:
+    image: container-registry.oracle.com/database/express:21.3.0-xe
+    container_name: oracle-xe-source
+    hostname: oracle-xe
+    environment:
+      - ORACLE_PWD=Oracle123!
+      - ORACLE_CHARACTERSET=AL32UTF8
+    ports:
+      - "1521:1521"
+      - "5500:5500"
+    volumes:
+      - oracle_data:/opt/oracle/oradata
+      - ./scripts/oracle:/docker-entrypoint-initdb.d/startup
+      - ./configs/oracle:/opt/oracle/scripts/setup
+      - ./logs/oracle:/opt/oracle/diag
+    networks:
+      - gg-network
+    healthcheck:
+      test: ["CMD", "sqlplus", "-s", "sys/Oracle123!@localhost:1521/XE as sysdba", "<<<", "SELECT 1 FROM dual;"]
+      timeout: 30s
+      retries: 10
+      start_period: 40s
+      interval: 30s
+
+  # PostgreSQL Database (Target)
+  postgresql:
+    image: postgres:15
+    container_name: postgresql-target
+    hostname: postgresql
+    environment:
+      - POSTGRES_DB=targetdb
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=Postgres123!
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/postgresql:/docker-entrypoint-initdb.d
+      - ./configs/postgresql:/etc/postgresql
+      - ./logs/postgresql:/var/log/postgresql
+    networks:
+      - gg-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d targetdb"]
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+      interval: 10s
+
+  # GoldenGate for Oracle (Extract)
+  goldengate-oracle:
+    image: container-registry.oracle.com/middleware/goldengate:21.3.0.0.0
+    container_name: gg-oracle-extract
+    hostname: gg-oracle
+    environment:
+      - OGG_DEPLOYMENT=OracleExtract
+      - OGG_ADMIN_PWD=Oracle123!
+      - OGG_SECURE=false
+    ports:
+      - "9100:9100"
+      - "9011:9011"
+    volumes:
+      - gg_oracle_data:/opt/oracle/ogg/var
+      - ./configs/goldengate/oracle:/opt/oracle/ogg/dirprm
+      - ./scripts/goldengate/oracle:/opt/oracle/ogg/scripts
+      - ./logs/goldengate/oracle:/opt/oracle/ogg/ggserr
+    networks:
+      - gg-network
+    depends_on:
+      oracle-xe:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9100"]
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+      interval: 30s
+
+  # GoldenGate for PostgreSQL (Replicat)
+  goldengate-postgresql:
+    image: container-registry.oracle.com/middleware/goldengate_postgresql:21.3.0.0.0
+    container_name: gg-postgresql-replicat
+    hostname: gg-postgresql
+    environment:
+      - OGG_DEPLOYMENT=PostgreSQLReplicat
+      - OGG_ADMIN_PWD=Oracle123!
+      - OGG_SECURE=false
+    ports:
+      - "9200:9200"
+      - "9021:9021"
+    volumes:
+      - gg_postgres_data:/opt/oracle/ogg/var
+      - ./configs/goldengate/postgresql:/opt/oracle/ogg/dirprm
+      - ./scripts/goldengate/postgresql:/opt/oracle/ogg/scripts
+      - ./logs/goldengate/postgresql:/opt/oracle/ogg/ggserr
+    networks:
+      - gg-network
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200"]
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+      interval: 30s
+
+  # Optional: pgAdmin for PostgreSQL management
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@example.com
+      - PGADMIN_DEFAULT_PASSWORD=admin123
+      - PGADMIN_CONFIG_SERVER_MODE=False
+    ports:
+      - "8080:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - gg-network
+    depends_on:
+      - postgresql
+
+volumes:
+  oracle_data:
+    driver: local
+  postgres_data:
+    driver: local
+  gg_oracle_data:
+    driver: local
+  gg_postgres_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  gg-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

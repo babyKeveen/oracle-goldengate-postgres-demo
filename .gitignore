@@ -1,0 +1,68 @@
+# Docker volumes and data
+data/*
+!data/.gitkeep
+logs/*
+!logs/.gitkeep
+
+# Environment files with sensitive data
+.env
+.env.local
+.env.production
+.env.staging
+*.env
+
+# Docker Compose override files
+docker-compose.override.yml
+docker-compose.prod.yml
+
+# Oracle specific
+*.dmp
+*.log
+*.trc
+*.aud
+*.lst
+
+# GoldenGate specific
+configs/goldengate/trail/*
+configs/goldengate/discard/*
+configs/goldengate/dirsql/*
+configs/goldengate/dirout/*
+!configs/goldengate/trail/.gitkeep
+!configs/goldengate/discard/.gitkeep
+!configs/goldengate/dirsql/.gitkeep
+!configs/goldengate/dirout/.gitkeep
+
+# PostgreSQL specific
+postgresql.conf.backup
+pg_hba.conf.backup
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Runtime files
+*.pid
+*.sock
