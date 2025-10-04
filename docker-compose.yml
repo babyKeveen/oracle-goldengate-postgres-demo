@@ -54,7 +54,7 @@ services:
 
   # GoldenGate for Oracle (Extract)
   goldengate-oracle:
-    image: container-registry.oracle.com/middleware/goldengate:21.3.0.0.0
+    image: container-registry.oracle.com/goldengate/goldengate-free:latest
     container_name: gg-oracle-extract
     hostname: gg-oracle
     environment:
@@ -62,7 +62,7 @@ services:
       - OGG_ADMIN_PWD=Oracle123!
       - OGG_SECURE=false
     ports:
-      - "9100:9100"
+      - "9100:80"
       - "9011:9011"
     volumes:
       - gg_oracle_data:/opt/oracle/ogg/var
@@ -83,7 +83,7 @@ services:
 
   # GoldenGate for PostgreSQL (Replicat)
   goldengate-postgresql:
-    image: container-registry.oracle.com/middleware/goldengate_postgresql:21.3.0.0.0
+    image: container-registry.oracle.com/goldengate/goldengate-free:latest
     container_name: gg-postgresql-replicat
     hostname: gg-postgresql
     environment:
@@ -91,7 +91,7 @@ services:
       - OGG_ADMIN_PWD=Oracle123!
       - OGG_SECURE=false
     ports:
-      - "9200:9200"
+      - "9200:80"
       - "9021:9021"
     volumes:
       - gg_postgres_data:/opt/oracle/ogg/var

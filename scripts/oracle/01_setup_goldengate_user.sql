@@ -1,14 +1,18 @@
 -- Oracle GoldenGate Setup Script
 -- This script sets up the necessary users and privileges for GoldenGate
+-- Updated for Oracle XE multitenant (CDB/PDB) architecture
 
 -- Connect as SYSDBA
 CONNECT sys/Oracle123!@XE as sysdba;
 
+-- Switch to the pluggable database XEPDB1 (Oracle XE default PDB)
+ALTER SESSION SET CONTAINER = XEPDB1;
+
 -- Enable GoldenGate replication
 ALTER DATABASE ADD SUPPLEMENTAL LOG DATA;
 
--- Create GoldenGate admin user
-CREATE USER ggadmin IDENTIFIED BY Oracle123!;
+-- Create GoldenGate admin user in the PDB
+CREATE USER ggadmin IDENTIFIED BY "Oracle123!";
 GRANT CONNECT, RESOURCE, DBA TO ggadmin;
 GRANT SELECT ANY DICTIONARY TO ggadmin;
 GRANT FLASHBACK ANY TABLE TO ggadmin;
@@ -22,22 +26,16 @@ GRANT SELECT ON SYS.V_$ARCHIVED_LOG TO ggadmin;
 GRANT SELECT ON SYS.V_$ARCHIVE_DEST_STATUS TO ggadmin;
 GRANT SELECT ON SYS.V_$TRANSACTION TO ggadmin;
 
--- Enable archive log mode (required for GoldenGate)
-SHUTDOWN IMMEDIATE;
-STARTUP MOUNT;
-ALTER DATABASE ARCHIVELOG;
-ALTER DATABASE OPEN;
-
 -- Switch logfile to enable supplemental logging
 ALTER SYSTEM SWITCH LOGFILE;
 
--- Create sample schema for testing
-CREATE USER testuser IDENTIFIED BY Test123!;
+-- Create sample schema for testing (in the PDB)
+CREATE USER testuser IDENTIFIED BY "Test123!";
 GRANT CONNECT, RESOURCE TO testuser;
 GRANT UNLIMITED TABLESPACE TO testuser;
 
--- Connect as test user and create sample table
-CONNECT testuser/Test123!@XE;
+-- Connect as test user to the PDB
+CONNECT testuser/"Test123!"@XEPDB1;
 
 CREATE TABLE employees (
     id NUMBER PRIMARY KEY,
