@@ -1,0 +1,55 @@
+-- ============================================================================
+-- GoldenGate Replicat Configuration  
+-- Source: Trail files from Oracle Free Extract
+-- Target: PostgreSQL Database (targetdb)
+-- ============================================================================
+
+REPLICAT REPPG
+-- PostgreSQL database connection
+TARGETDB postgresql://postgres:Postgres123!@postgresql:5432/targetdb
+
+-- Source trail file configuration
+-- Read trail files created by Extract process
+TRAIL ./dirdat/ea
+
+-- Logging and reporting
+REPORTCOUNT EVERY 1000
+REPORT AT 00:01
+
+-- PostgreSQL specific settings
+-- Use batch processing for better performance
+BATCHSQL BATCHSIZE 1000
+
+-- Handle conflicts and errors
+-- REPERROR (DEFAULT, EXCEPTION)
+-- HANDLECOLLISIONS
+
+-- Table mapping configuration
+-- Map Oracle source table to PostgreSQL target table
+MAP gguser.employees, TARGET replicated.employees, 
+COLMAP (
+    employee_id = employee_id,
+    first_name = first_name,
+    last_name = last_name,
+    department = department,
+    salary = salary,
+    hire_date = hire_date,
+    email = email,
+    status = status
+);
+
+-- DDL Support (if enabled on extract)
+-- DDL
+
+-- Performance and tuning
+-- GROUPTRANSOPS 1000
+-- MAXTRANSOPS 5000
+
+-- ============================================================================
+-- Replicat Parameters Explanation:
+-- - REPPG: Replicat process name
+-- - TARGETDB: PostgreSQL connection string
+-- - TRAIL: Trail file path to read from
+-- - MAP: Table mapping from source to target
+-- - COLMAP: Column mapping (if needed for transformation)
+-- ============================================================================

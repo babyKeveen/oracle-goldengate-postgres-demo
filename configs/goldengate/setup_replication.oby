@@ -1,0 +1,53 @@
+-- ============================================================================
+-- GoldenGate Setup Script for Oracle Free to PostgreSQL Replication
+-- This script configures the Extract and Replicat processes
+-- ============================================================================
+
+-- Connect to GoldenGate Admin Client
+-- Run this from the GoldenGate container:
+-- /opt/oracle/ogg/bin/adminclient
+-- CONNECT http://localhost:80/oggf AS ggadmin PASSWORD GGAdmin123!
+
+-- 1. Create Database Credential Store
+-- ============================================
+INFO ALL
+DBLOGIN USERID gguser@oracle-free:1521/FREEPDB1, PASSWORD "GGUser123!"
+ADD CREDENTIALSTORE
+ALTER CREDENTIALSTORE ADD USER gguser@oracle-free:1521/FREEPDB1, PASSWORD "GGUser123!" ALIAS oracle_free
+ALTER CREDENTIALSTORE ADD USER postgres@postgresql:5432/targetdb, PASSWORD Postgres123! ALIAS postgresql_target
+
+-- 2. Create and Configure Extract Process
+-- ============================================
+-- Add the integrated extract process
+DBLOGIN USERIDALIAS oracle_free
+ADD EXTRACT EXTFREE, INTEGRATED TRANLOG, BEGIN NOW
+ADD EXTTRAIL ./dirdat/ea, EXTRACT EXTFREE, MEGABYTES 100
+
+-- Start the extract
+START EXTRACT EXTFREE
+
+-- 3. Create and Configure Replicat Process  
+-- ============================================
+-- Add the replicat process
+ADD REPLICAT REPPG, EXTTRAIL ./dirdat/ea
+START REPLICAT REPPG
+
+-- 4. Verify Process Status
+-- ============================================
+INFO EXTRACT EXTFREE
+INFO REPLICAT REPPG
+INFO ALL
+
+-- 5. Check Extract and Replicat Statistics
+-- ============================================
+STATS EXTRACT EXTFREE
+STATS REPLICAT REPPG
+
+-- ============================================================================
+-- Manual Steps to Execute:
+-- 1. Start containers: docker compose up -d
+-- 2. Connect to GoldenGate container: docker compose exec goldengate bash
+-- 3. Launch admin client: /opt/oracle/ogg/bin/adminclient
+-- 4. Connect to service: CONNECT http://localhost:80/oggf AS ggadmin PASSWORD GGAdmin123!
+-- 5. Run each section above step by step
+-- ============================================================================

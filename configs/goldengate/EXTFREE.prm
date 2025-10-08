@@ -1,0 +1,41 @@
+-- ============================================================================
+-- GoldenGate Integrated Extract Configuration
+-- Source: Oracle Database 23ai Free (FREEPDB1)
+-- Target: PostgreSQL via Trail Files
+-- ============================================================================
+
+EXTRACT EXTFREE
+-- Use Integrated Extract for better performance and reduced redo impact
+-- This requires Oracle Free 23ai which supports integrated extract
+USERID gguser@oracle-free:1521/FREEPDB1, PASSWORD "GGUser123!"
+
+-- Trail file configuration
+-- Trail files will be written to the shared trail directory
+EXTTRAIL ./dirdat/ea
+
+-- Logging and reporting
+REPORTCOUNT EVERY 1000
+REPORT AT 00:01
+
+-- Handle DDL changes (optional - enables schema evolution)
+-- DDL INCLUDE MAPPED OBJNAME gguser.employees
+
+-- Table mapping configuration
+-- Extract changes from gguser.employees table
+TABLE gguser.employees;
+
+-- Performance tuning parameters
+-- TRANLOGOPTIONS MINEFROMREDO
+-- TRANLOGOPTIONS EXCLUDEUSER ggadmin
+
+-- Error handling
+-- Skip certain errors that might occur during initial sync
+-- REPERROR (DEFAULT, EXCEPTION)
+
+-- ============================================================================
+-- Extract Parameters Explanation:
+-- - EXTFREE: Extract process name
+-- - USERID: Database connection credentials
+-- - EXTTRAIL: Trail file path and prefix (ea001, ea002, etc.)
+-- - TABLE: Specifies which tables to replicate
+-- ============================================================================

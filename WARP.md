@@ -145,3 +145,91 @@ This is a **learning/demo project** in active development:
 - 🔄 Advanced features like schema mapping and conflict resolution planned
 
 When working with this project, focus on the Docker-based architecture and understand that the Oracle database uses a pluggable database (XEPDB1) rather than the container database (XE) directly for replication.
+
+## Resume Here
+
+Status checklist (update as you progress):
+- [x] Images pulled (XE, EE, GoldenGate, PostgreSQL, pgAdmin)
+- [x] Containers running (oracle-ee-source, postgresql-target, gg-oracle-ee-extract, gg-postgresql-replicat, pgadmin)
+- [x] PostgreSQL target schema created (replicated.employees, gguser)
+- [ ] GoldenGate Extract (Oracle EE) configured (EXT_EE → trail EA)
+- [ ] Distribution Path created (EA → RA → gg-postgresql)
+- [ ] Receiver (PostgreSQL) + Replicat configured (REP_PG from RA)
+- [ ] End-to-end test validated
+
+Next actions:
+1) Configure Extract on Oracle EE (UI http://localhost:9110) for ORCLPDB1 and table TESTUSER.EMPLOYEES → write local trail EA.
+2) Create a Distribution Path from the EE deployment to the PostgreSQL deployment (target http://gg-postgresql:80) → remote trail RA.
+3) Configure Replicat on PostgreSQL (UI http://localhost:9200) from remote trail RA → PostgreSQL targetdb, schema replicated.
+4) Insert a test row in Oracle EE (ORCLPDB1) and verify it appears in PostgreSQL.
+
+## GoldenGate Runbook (Oracle EE → PostgreSQL)
+
+Services and URLs
+- GoldenGate Oracle EE (Extract): http://localhost:9110
+- GoldenGate PostgreSQL (Replicat): http://localhost:9200
+- pgAdmin: http://localhost:8080
+
+Source and target databases
+- Oracle EE PDB: ORCLPDB1 (users: ggadmin, testuser; SYS: sys/Oracle123!)
+- PostgreSQL: host postgresql, db targetdb (users: postgres, gguser)
+
+1) Prepare Oracle EE (ORCLPDB1)
+- Ensure:
+  - ggadmin and testuser exist in ORCLPDB1
+  - Supplemental logging enabled at DB and table level
+  - Table TESTUSER.EMPLOYEES exists with supplemental logging
+- Tip: Use an EE-focused setup script or run SQL as SYSDBA against ORCLPDB1.
+
+2) Configure Extract (Oracle EE deployment — 9110)
+- Security → Credentials: add alias ORA_SRC_EE (ggadmin / Oracle).
+- Configuration → Add Extract:
+  - Name: EXT_EE
+  - Type: Integrated Extract
+  - Database/container: ORCLPDB1
+  - Credential alias: ORA_SRC_EE
+  - Local trail: EA
+  - Objects: include TESTUSER.EMPLOYEES
+- Start EXT_EE and confirm it writes to dirdat/ea.
+
+3) Create Distribution Path (EE → PostgreSQL)
+- Distribution Server → Paths → Add:
+  - Name: to_pg
+  - Source: local trail EA
+  - Target: http://gg-postgresql:80
+  - Target auth: oggadmin / Oracle123! (default)
+  - Remote trail: RA
+- Start the path; status should be Running.
+
+4) Configure Receiver + Replicat (PostgreSQL deployment — 9200)
+- Receiver Server: ensure inbound receiver is running (will create trail RA).
+- Security → Credentials: add alias PG_TGT (gguser).
+- Configuration → Add Replicat:
+  - Name: REP_PG
+  - Type: Non-Integrated
+  - Source: remote trail RA
+  - Target: JDBC → jdbc:postgresql://postgresql:5432/targetdb
+  - Credential alias: PG_TGT
+  - Mapping: TESTUSER.EMPLOYEES → replicated.employees (1:1 columns)
+- Start REP_PG; verify Checkpoints advance.
+
+5) Test replication
+- Insert into Oracle EE (ORCLPDB1) as TESTUSER, then verify in PostgreSQL:
+  - Oracle: INSERT INTO employees (id, name, department, salary, email) VALUES (...);
+  - Postgres: SELECT id, name FROM replicated.employees WHERE id = ...;
+- Expect new row to appear within a few seconds.
+
+Troubleshooting
+- No rows in Postgres:
+  - Check Extract is RUNNING and writing to EA.
+  - Ensure Distribution Path to_pg is RUNNING (not Paused) and delivering to RA.
+  - Verify Replicat REP_PG is RUNNING and has no mapping errors.
+- Object/schema mismatches:
+  - Confirm ORCLPDB1 vs CDB and table name/schema.
+  - Confirm column names and datatypes match.
+- Credentials:
+  - Add DB credentials in each deployment’s Credential Store before creating groups.
+
+Persistence and restart
+- Containers and data persist via Docker volumes.
+- To resume after reboot: `docker-compose up -d`, then open 9110 and 9200.

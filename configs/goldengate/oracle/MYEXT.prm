@@ -1,0 +1,4 @@
+EXTRACT MYEXT
+USERIDALIAS gguser_alias
+EXTTRAIL ex
+TABLE gguser.employees;

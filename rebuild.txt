@@ -1,0 +1,14 @@
+# Force stop and remove the container
+docker stop oracle-ee-source
+docker rm -f oracle-ee-source
+
+# Verify it's gone
+docker ps | grep oracle-ee-source
+# (should show nothing)
+
+# Remove the EE data volume so it recreates cleanly
+docker volume ls | grep oracle_ee_data
+docker volume rm oracle-goldengate-postgres-demo_oracle_ee_data
+
+# Now restart just the EE service
+docker-compose up -d oracle-ee-source

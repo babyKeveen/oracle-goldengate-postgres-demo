@@ -1,34 +1,34 @@
-
 services:
-  # Oracle Database 23ai Free (Source) - ARM64 Native with Integrated Extract Support
-  oracle-free:
-    image: container-registry.oracle.com/database/free:latest
-    container_name: oracle-free-source
-    hostname: oracle-free
+  # Oracle Enterprise Edition Database (Source) - x86 Emulated
+  oracle-ee:
+    image: container-registry.oracle.com/database/enterprise:latest
+    container_name: oracle-ee-source
+    hostname: oracle-ee
     environment:
       - ORACLE_PWD=Oracle123!
       - ORACLE_CHARACTERSET=AL32UTF8
-      - ORACLE_SID=FREE
-      - ORACLE_PDB=FREEPDB1
+      - ORACLE_SID=ORCL
+      - ORACLE_PDB=ORCLPDB1
       - INIT_SGA_SIZE=2048
       - INIT_PGA_SIZE=1024
+      - ORACLE_EDITION=EE
     ports:
       - "1521:1521"
       - "5500:5500"
     volumes:
-      - oracle_free_data:/opt/oracle/oradata
+      - oracle_ee_data:/opt/oracle/oradata
       - ./scripts/oracle-free:/docker-entrypoint-initdb.d/startup
       - ./configs/oracle-free:/opt/oracle/scripts/setup
       - ./logs/oracle-free:/opt/oracle/diag
     networks:
       - gg-network
     healthcheck:
-      test: ["CMD", "sqlplus", "-s", "sys/Oracle123!@localhost:1521/FREE as sysdba", "<<<", "SELECT 1 FROM dual;"]
-      timeout: 45s
-      retries: 12
-      start_period: 90s  # 23ai Free starts faster than EE
-      interval: 30s
-    shm_size: 2g  # Required for proper Oracle performance
+      test: ["CMD", "sqlplus", "-s", "sys/Oracle123!@localhost:1521/ORCL as sysdba", "<<<", "SELECT 1 FROM dual;"]
+      timeout: 60s
+      retries: 15
+      start_period: 180s  # EE takes much longer to start on ARM
+      interval: 45s
+    shm_size: 4g  # More memory for EE on emulation
 
   # PostgreSQL Database (Target)
   postgresql:
@@ -56,19 +56,18 @@ services:
       start_period: 30s
       interval: 10s
 
-  # GoldenGate (Handles both Extract from Oracle Free and Replicat to PostgreSQL)
+  # GoldenGate (Handles both Extract from Oracle EE and Replicat to PostgreSQL)
   goldengate:
     image: container-registry.oracle.com/goldengate/goldengate-free:latest
     platform: linux/amd64  # Force AMD64 emulation on ARM64 Mac
-    container_name: gg-replication
-    hostname: gg-replication
+    container_name: gg-replication-ee
+    hostname: gg-replication-ee
     environment:
-      - OGG_DEPLOYMENT=OracleFreeToPostgreSQL
-      - OGG_ADMIN_PWD=GGAdmin123!
+      - OGG_DEPLOYMENT=OracleEEToPostgreSQL
+      - OGG_ADMIN_PWD=ggadmin123
       - OGG_SECURE=false
     ports:
-      - "9200:8080"
-      - "9201:80"
+      - "9200:80"
       - "9021:9021"
     volumes:
       - gg_data:/opt/oracle/ogg/var
@@ -78,19 +77,19 @@ services:
     networks:
       - gg-network
     depends_on:
-      oracle-free:
+      oracle-ee:
         condition: service_healthy
       postgresql:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-s", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-s", "http://localhost:80/oggf/"]
       timeout: 10s
       retries: 5
       start_period: 60s
       interval: 30s
 
 volumes:
-  oracle_free_data:
+  oracle_ee_data:
     driver: local
   postgres_data:
     driver: local
