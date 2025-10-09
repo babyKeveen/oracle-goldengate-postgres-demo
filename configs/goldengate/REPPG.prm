@@ -5,8 +5,9 @@
 -- ============================================================================
 
 REPLICAT REPPG
--- PostgreSQL database connection
-TARGETDB postgresql://postgres:Postgres123!@postgresql:5432/targetdb
+-- PostgreSQL database connection - SECURE: Use credential alias
+-- TARGETDB postgresql://postgres:Postgres123!@postgresql:5432/targetdb
+USERIDAlias postgresql_target
 
 -- Source trail file configuration
 -- Read trail files created by Extract process

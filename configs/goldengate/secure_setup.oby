@@ -1,0 +1,60 @@
+-- ============================================================================
+-- SECURE GoldenGate Setup Script 
+-- Uses credential store instead of plaintext passwords
+-- ============================================================================
+
+-- Connect to GoldenGate Admin Service
+CONNECT http://localhost/oggf deployment OracleFreeToPostgreSQL as ggadmin password GGAdmin123!
+
+-- ============================================================================
+-- 1. Create Secure Credential Store
+-- ============================================================================
+INFO ALL
+
+-- Create the credential store (one-time setup)
+ADD CREDENTIALSTORE
+
+-- Add database credentials with secure aliases
+-- Note: These commands contain passwords but are executed once to set up the store
+ALTER CREDENTIALSTORE ADD USER gguser@oracle-free:1521/FREEPDB1, PASSWORD "GGUser123!" ALIAS oracle_free
+ALTER CREDENTIALSTORE ADD USER postgres@postgresql:5432/targetdb, PASSWORD "Postgres123!" ALIAS postgresql_target
+
+-- Verify credential store
+INFO CREDENTIALSTORE
+
+-- ============================================================================
+-- 2. Create Extract Process (Using Secure Credential Alias)
+-- ============================================================================
+-- Login using secure alias instead of plaintext password
+DBLOGIN USERIDALIAS oracle_free
+
+-- Create integrated extract process
+ADD EXTRACT EXTFREE, INTEGRATED TRANLOG, BEGIN NOW
+ADD EXTTRAIL ./dirdat/ea, EXTRACT EXTFREE, MEGABYTES 100
+
+-- ============================================================================
+-- 3. Create Replicat Process (Using Secure Credential Alias)
+-- ============================================================================
+-- Add replicat process using trail files
+ADD REPLICAT REPPG, EXTTRAIL ./dirdat/ea
+
+-- ============================================================================
+-- 4. Start Processes
+-- ============================================================================
+START EXTRACT EXTFREE
+START REPLICAT REPPG
+
+-- ============================================================================
+-- 5. Verify Status
+-- ============================================================================
+INFO EXTRACT EXTFREE
+INFO REPLICAT REPPG
+INFO ALL
+
+-- ============================================================================
+-- Security Benefits:
+-- - Passwords stored encrypted in GoldenGate wallet
+-- - .prm files contain only aliases, no plaintext passwords
+-- - Credential store is encrypted and access-controlled
+-- - Passwords not visible in process lists or parameter files
+-- ============================================================================

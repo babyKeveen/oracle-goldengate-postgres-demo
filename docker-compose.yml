@@ -17,8 +17,8 @@ services:
       - "5500:5500"
     volumes:
       - oracle_free_data:/opt/oracle/oradata
-      - ./scripts/oracle-free:/docker-entrypoint-initdb.d/startup
-      - ./configs/oracle-free:/opt/oracle/scripts/setup
+      - ./scripts/oracle-free:/opt/oracle/scripts/setup
+      - ./configs/oracle-free:/opt/oracle/scripts/configs
       - ./logs/oracle-free:/opt/oracle/diag
     networks:
       - gg-network
@@ -72,6 +72,8 @@ services:
       - "9021:9021"
     volumes:
       - gg_data:/opt/oracle/ogg/var
+      - gg_u02_data:/u02
+      - gg_u03_data:/u03
       - ./configs/goldengate:/opt/oracle/ogg/dirprm
       - ./scripts/goldengate:/opt/oracle/ogg/scripts
       - ./logs/goldengate:/opt/oracle/ogg/ggserr
@@ -96,10 +98,14 @@ volumes:
     driver: local
   gg_data:
     driver: local
+  gg_u02_data:
+    driver: local
+  gg_u03_data:
+    driver: local
 
 networks:
   gg-network:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.20.0.0/16
+        - subnet: 172.21.0.0/16

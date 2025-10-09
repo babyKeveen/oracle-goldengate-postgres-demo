@@ -7,7 +7,8 @@
 EXTRACT EXTFREE
 -- Use Integrated Extract for better performance and reduced redo impact
 -- This requires Oracle Free 23ai which supports integrated extract
-USERID gguser@oracle-free:1521/FREEPDB1, PASSWORD "GGUser123!"
+-- SECURE: Use credential alias instead of plaintext password
+USERIDAlias oracle_free
 
 -- Trail file configuration
 -- Trail files will be written to the shared trail directory
