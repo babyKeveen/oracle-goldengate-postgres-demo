@@ -1,18 +1,20 @@
 -- Oracle GoldenGate Setup Script
 -- This script sets up the necessary users and privileges for GoldenGate
--- Updated for Oracle XE multitenant (CDB/PDB) architecture
+-- Note: Connection is automatically established by the container
 
--- Connect as SYSDBA
-CONNECT sys/Oracle123!@XE as sysdba;
-
--- Switch to the pluggable database XEPDB1 (Oracle XE default PDB)
-ALTER SESSION SET CONTAINER = XEPDB1;
 
 -- Enable GoldenGate replication
 ALTER DATABASE ADD SUPPLEMENTAL LOG DATA;
 
+-- Switch logfile to enable supplemental logging
+ALTER SYSTEM SWITCH LOGFILE;
+
+-- Switch to the pluggable database XEPDB1 (Oracle XE default PDB)
+ALTER SESSION SET CONTAINER = FREEPDB1;
+
+
 -- Create GoldenGate admin user in the PDB
-CREATE USER ggadmin IDENTIFIED BY "Oracle123!";
+CREATE USER ggadmin IDENTIFIED BY "GGAdmin123!";
 GRANT CONNECT, RESOURCE, DBA TO ggadmin;
 GRANT SELECT ANY DICTIONARY TO ggadmin;
 GRANT FLASHBACK ANY TABLE TO ggadmin;
@@ -26,16 +28,11 @@ GRANT SELECT ON SYS.V_$ARCHIVED_LOG TO ggadmin;
 GRANT SELECT ON SYS.V_$ARCHIVE_DEST_STATUS TO ggadmin;
 GRANT SELECT ON SYS.V_$TRANSACTION TO ggadmin;
 
--- Switch logfile to enable supplemental logging
-ALTER SYSTEM SWITCH LOGFILE;
-
 -- Create sample schema for testing (in the PDB)
-CREATE USER testuser IDENTIFIED BY "Test123!";
-GRANT CONNECT, RESOURCE TO testuser;
-GRANT UNLIMITED TABLESPACE TO testuser;
-
--- Connect as test user to the PDB
-CONNECT testuser/"Test123!"@XEPDB1;
+CREATE USER gguser IDENTIFIED BY "GGUser123!";
+GRANT CONNECT, RESOURCE TO gguser;
+GRANT UNLIMITED TABLESPACE TO gguser;
+alter session set current_schema=gguser;
 
 CREATE TABLE employees (
     id NUMBER PRIMARY KEY,
@@ -61,5 +58,3 @@ COMMIT;
 
 -- Show the data
 SELECT * FROM employees;
-
-EXIT;

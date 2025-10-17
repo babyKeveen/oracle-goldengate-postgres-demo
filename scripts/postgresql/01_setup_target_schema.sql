@@ -2,7 +2,7 @@
 -- This script creates the target schema and tables for GoldenGate replication
 
 -- Connect to target database
-\c targetdb;
+\c postgresdb;
 
 -- Create a schema for replicated data
 CREATE SCHEMA IF NOT EXISTS replicated;
