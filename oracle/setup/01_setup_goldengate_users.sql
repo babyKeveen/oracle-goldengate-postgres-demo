@@ -10,7 +10,7 @@ ALTER DATABASE ADD SUPPLEMENTAL LOG DATA;
 ALTER SYSTEM SWITCH LOGFILE;
 
 -- Switch to the pluggable database XEPDB1 (Oracle XE default PDB)
-ALTER SESSION SET CONTAINER = FREEPDB1;
+ALTER SESSION SET CONTAINER = EXTRACTPDB1;
 
 
 -- Create GoldenGate admin user in the PDB
@@ -32,9 +32,8 @@ GRANT SELECT ON SYS.V_$TRANSACTION TO ggadmin;
 CREATE USER gguser IDENTIFIED BY "GGUser123!";
 GRANT CONNECT, RESOURCE TO gguser;
 GRANT UNLIMITED TABLESPACE TO gguser;
-alter session set current_schema=gguser;
 
-CREATE TABLE employees (
+CREATE TABLE gguser.employees (
     id NUMBER PRIMARY KEY,
     name VARCHAR2(100) NOT NULL,
     department VARCHAR2(50),
@@ -45,16 +44,16 @@ CREATE TABLE employees (
 );
 
 -- Enable supplemental logging for the table
-ALTER TABLE employees ADD SUPPLEMENTAL LOG DATA (ALL) COLUMNS;
+ALTER TABLE gguser.employees ADD SUPPLEMENTAL LOG DATA (ALL) COLUMNS;
 
 -- Insert sample data
-INSERT INTO employees (id, name, department, salary, email) VALUES 
+INSERT INTO gguser.employees (id, name, department, salary, email) VALUES 
 (1, 'John Doe', 'IT', 75000, 'john.doe@company.com');
-INSERT INTO employees (id, name, department, salary, email) VALUES 
+INSERT INTO gguser.employees (id, name, department, salary, email) VALUES 
 (2, 'Jane Smith', 'HR', 65000, 'jane.smith@company.com');
-INSERT INTO employees (id, name, department, salary, email) VALUES 
+INSERT INTO gguser.employees (id, name, department, salary, email) VALUES 
 (3, 'Bob Johnson', 'Finance', 70000, 'bob.johnson@company.com');
 COMMIT;
 
 -- Show the data
-SELECT * FROM employees;
+SELECT * FROM gguser.employees;
